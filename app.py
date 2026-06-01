@@ -301,6 +301,26 @@ with st.sidebar:
     subjects = len(set(r.get('subject_id','') for r in load_all_data()))
     st.markdown(f'<div class="mono" style="font-size:11px;color:#5a7a9a">누적 측정: {total}건<br>피험자 수: {subjects}명</div>', unsafe_allow_html=True)
 
+    st.markdown("---")
+    st.markdown("""
+<div style="font-size:11px;color:#5a7a9a;font-family:'Share Tech Mono',monospace;line-height:1.9">
+<span style="color:#00d4ff;letter-spacing:2px">// DEVELOPER</span><br><br>
+<span style="color:#ffffff;font-weight:700;font-size:12px">남정훈 교수</span><br>
+<span style="color:#c8d8e8;font-size:10px">Jay H. Nam, Ph.D.</span><br><br>
+재능대학교 바이오테크과 학과장<br>
+AI-바이오분석특화연구소 (산학협력단 부설)<br><br>
+<span style="color:#7fff6e">연구분야</span><br>
+생체유체역학 · 혈유변학<br>
+랩온어칩 기반 시료전처리<br><br>
+<a href="https://github.com/circlenam" target="_blank" style="color:#00d4ff;text-decoration:none">⬡ GitHub · circlenam</a><br>
+<a href="https://linkedin.com/in/circlenam" target="_blank" style="color:#00d4ff;text-decoration:none">⬡ LinkedIn · circlenam</a><br>
+<a href="mailto:namjh@jeiu.ac.kr" style="color:#00d4ff;text-decoration:none">⬡ namjh@jeiu.ac.kr</a><br><br>
+<a href="https://circlenam.github.io/biogame/" target="_blank" style="color:#7fff6e;text-decoration:none">⬡ 바이오분석오락실</a><br>
+<a href="https://bioanalysis.re.kr" target="_blank" style="color:#7fff6e;text-decoration:none">⬡ bioanalysis.re.kr</a><br><br>
+<span style="color:#1e3a5f">© 2025 Jay H. Nam · 재능대학교</span>
+</div>
+""", unsafe_allow_html=True)
+
 
 # ═══════════════════════════════════════════════════
 # 측정 모드
