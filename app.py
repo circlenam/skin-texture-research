@@ -197,7 +197,7 @@ USB 디지털 현미경(실제 배율 약 35x, 시야 약 27×13mm)으로 촬영
 이미지가 피부 표면이 아니면: {{"error": "피부 표면 이미지가 아닙니다."}}"""
 
     response = client.messages.create(
-        model="claude-sonnet-4-20250514",
+        model="claude-sonnet-4-5",
         max_tokens=1200,
         system=system,
         messages=[{
