@@ -9,6 +9,13 @@ import datetime
 import numpy as np
 from PIL import Image
 
+try:
+    import gspread
+    from google.oauth2.service_account import Credentials
+    GSPREAD_AVAILABLE = True
+except ImportError:
+    GSPREAD_AVAILABLE = False
+
 st.set_page_config(
     page_title="손등 피부 텍스처 분석기 | 재능대 AI-바이오분석연구소",
     page_icon="🔬",
@@ -213,8 +220,30 @@ USB 디지털 현미경(실제 배율 약 35x, 시야 약 27×13mm)으로 촬영
     return json.loads(raw)
 
 
+def get_gsheet():
+    """Google Sheets 연결"""
+    try:
+        if not GSPREAD_AVAILABLE:
+            return None
+        creds_dict = dict(st.secrets["gcp_service_account"])
+        scopes = [
+            "https://www.googleapis.com/auth/spreadsheets",
+            "https://www.googleapis.com/auth/drive"
+        ]
+        creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
+        client = gspread.authorize(creds)
+        sheet_id = st.secrets.get("SHEET_ID", "")
+        if not sheet_id:
+            return None
+        spreadsheet = client.open_by_key(sheet_id)
+        return spreadsheet.worksheet("data")
+    except Exception as e:
+        return None
+
+
 def save_to_storage(record: dict):
-    """Streamlit 영구 저장소에 누적 저장"""
+    """Google Sheets + 세션에 동시 저장"""
+    # 세션 저장 (화면 표시용)
     try:
         existing = st.session_state.get('all_data', [])
         existing.append(record)
@@ -222,8 +251,42 @@ def save_to_storage(record: dict):
     except:
         pass
 
+    # Google Sheets 저장 (영구 누적)
+    try:
+        ws = get_gsheet()
+        if ws:
+            row = [
+                str(record.get('측정일시', '')),
+                str(record.get('피험자ID', '')),
+                str(record.get('연령대', '')),
+                str(record.get('성별', '')),
+                str(record.get('회차', '')),
+                str(record.get('텍스처점수', '')),
+                str(record.get('텍스처균일도', '')),
+                str(record.get('노화등급', '')),
+                str(record.get('주름밀도', '')),
+                str(record.get('주름방향', '')),
+                str(record.get('다각형패턴', '')),
+                str(record.get('밝기균일도', '')),
+                str(record.get('피부상태', '')),
+                str(record.get('신뢰도', '')),
+                str(record.get('이미지품질', '')),
+                str(record.get('ICC', '')),
+            ]
+            ws.append_row(row)
+    except Exception as e:
+        pass
+
 
 def load_all_data():
+    """Google Sheets에서 전체 데이터 로드"""
+    try:
+        ws = get_gsheet()
+        if ws:
+            records = ws.get_all_records()
+            return records
+    except:
+        pass
     return st.session_state.get('all_data', [])
 
 
@@ -316,7 +379,7 @@ AI-바이오분석특화연구소 (산학협력단 부설)<br><br>
 <a href="https://linkedin.com/in/circlenam" target="_blank" style="color:#00d4ff;text-decoration:none">⬡ LinkedIn · circlenam</a><br>
 <a href="mailto:namjh@jeiu.ac.kr" style="color:#00d4ff;text-decoration:none">⬡ namjh@jeiu.ac.kr</a><br><br>
 <a href="https://circlenam.github.io/biogame/" target="_blank" style="color:#7fff6e;text-decoration:none">⬡ 바이오분석오락실</a><br>
-<a href="https://bioanalysis.re.kr" target="_blank" style="color:#7fff6e;text-decoration:none">⬡ circlenam.github.io/biogame/</a><br><br>
+<a href="https://bioanalysis.re.kr" target="_blank" style="color:#7fff6e;text-decoration:none">⬡ bioanalysis.re.kr</a><br><br>
 <span style="color:#1e3a5f">© 2025 Jay H. Nam · 재능대학교</span>
 </div>
 """, unsafe_allow_html=True)
