@@ -316,7 +316,7 @@ AI-바이오분석특화연구소 (산학협력단 부설)<br><br>
 <a href="https://linkedin.com/in/circlenam" target="_blank" style="color:#00d4ff;text-decoration:none">⬡ LinkedIn · circlenam</a><br>
 <a href="mailto:namjh@jeiu.ac.kr" style="color:#00d4ff;text-decoration:none">⬡ namjh@jeiu.ac.kr</a><br><br>
 <a href="https://circlenam.github.io/biogame/" target="_blank" style="color:#7fff6e;text-decoration:none">⬡ 바이오분석오락실</a><br>
-<a href="https://bioanalysis.re.kr" target="_blank" style="color:#7fff6e;text-decoration:none">⬡ bioanalysis.re.kr</a><br><br>
+<a href="https://bioanalysis.re.kr" target="_blank" style="color:#7fff6e;text-decoration:none">⬡ circlenam.github.io/biogame/</a><br><br>
 <span style="color:#1e3a5f">© 2025 Jay H. Nam · 재능대학교</span>
 </div>
 """, unsafe_allow_html=True)
