@@ -688,35 +688,70 @@ else:
 
         df = pd.DataFrame(all_data)
 
+        # 컬럼명 안전하게 처리
+        score_col = '평균텍스처점수' if '평균텍스처점수' in df.columns else ('텍스처점수' if '텍스처점수' in df.columns else None)
+        aging_col = '평균노화등급' if '평균노화등급' in df.columns else ('노화등급' if '노화등급' in df.columns else None)
+        id_col = '피험자ID' if '피험자ID' in df.columns else None
+        age_col = '연령대' if '연령대' in df.columns else None
+        icc_col = 'ICC' if 'ICC' in df.columns else None
+
         # 요약 통계
         st.markdown("#### 데이터 수집 현황")
         c1, c2, c3, c4 = st.columns(4)
-        c1.metric("총 측정 건수", len(df))
-        c2.metric("피험자 수", df['피험자ID'].nunique())
-        c3.metric("평균 텍스처 점수", f"{df['텍스처점수'].mean():.1f}")
-        c4.metric("평균 노화 등급", f"{df['노화등급'].mean():.2f}")
+        c1.metric("총 피험자 수", len(df))
+        c2.metric("피험자 ID 수", df[id_col].nunique() if id_col else '—')
+
+        if score_col:
+            scores_num = pd.to_numeric(df[score_col], errors='coerce')
+            c3.metric("평균 텍스처 점수", f"{scores_num.mean():.1f}" if not scores_num.isna().all() else '—')
+        else:
+            c3.metric("평균 텍스처 점수", "—")
+
+        if aging_col:
+            aging_num = pd.to_numeric(df[aging_col], errors='coerce')
+            c4.metric("평균 노화 등급", f"{aging_num.mean():.2f}" if not aging_num.isna().all() else '—')
+        else:
+            c4.metric("평균 노화 등급", "—")
 
         st.markdown("---")
 
         # 연령별 통계
-        st.markdown("#### 연령대별 텍스처 점수")
-        age_stats = df.groupby('연령대')['텍스처점수'].agg(['mean','std','count']).round(2)
-        age_stats.columns = ['평균', '표준편차', '측정수']
-        st.dataframe(age_stats, use_container_width=True)
+        if score_col and age_col:
+            st.markdown("#### 연령대별 평균 텍스처 점수")
+            df[score_col] = pd.to_numeric(df[score_col], errors='coerce')
+            age_stats = df.groupby(age_col)[score_col].agg(['mean','std','count']).round(2)
+            age_stats.columns = ['평균점수', '표준편차', '피험자수']
+            st.dataframe(age_stats, use_container_width=True)
 
         # ICC 현황
-        icc_data = df[df['ICC'].notna()]
-        if not icc_data.empty:
-            st.markdown("#### ICC 신뢰도 현황")
-            c1, c2, c3 = st.columns(3)
-            c1.metric("평균 ICC", f"{icc_data['ICC'].mean():.3f}")
-            c2.metric("ICC ≥ 0.75 비율", f"{(icc_data['ICC'] >= 0.75).mean()*100:.0f}%")
-            c3.metric("ICC ≥ 0.90 비율", f"{(icc_data['ICC'] >= 0.90).mean()*100:.0f}%")
+        if icc_col:
+            df[icc_col] = pd.to_numeric(df[icc_col], errors='coerce')
+            icc_data = df[df[icc_col].notna()]
+            if not icc_data.empty:
+                st.markdown("#### ICC 신뢰도 현황")
+                c1, c2, c3 = st.columns(3)
+                c1.metric("평균 ICC", f"{icc_data[icc_col].mean():.3f}")
+                c2.metric("ICC ≥ 0.75 비율", f"{(icc_data[icc_col] >= 0.75).mean()*100:.0f}%")
+                c3.metric("ICC ≥ 0.90 비율", f"{(icc_data[icc_col] >= 0.90).mean()*100:.0f}%")
+
+        st.markdown("---")
+
+        # 3회 점수 비교 (summary 시트)
+        if all(c in df.columns for c in ['점수1회','점수2회','점수3회']):
+            st.markdown("#### 회차별 점수 분포")
+            for col in ['점수1회','점수2회','점수3회']:
+                df[col] = pd.to_numeric(df[col], errors='coerce')
+            round_stats = pd.DataFrame({
+                '1회차': [df['점수1회'].mean().round(1), df['점수1회'].std().round(1)],
+                '2회차': [df['점수2회'].mean().round(1), df['점수2회'].std().round(1)],
+                '3회차': [df['점수3회'].mean().round(1), df['점수3회'].std().round(1)],
+            }, index=['평균', '표준편차'])
+            st.dataframe(round_stats, use_container_width=True)
 
         st.markdown("---")
 
         # 전체 데이터 테이블
-        st.markdown("#### 전체 데이터")
+        st.markdown("#### 전체 데이터 (summary)")
         st.dataframe(df, use_container_width=True)
 
         st.markdown("---")
@@ -727,14 +762,14 @@ else:
         st.download_button(
             label="▼ CSV 다운로드 (논문용)",
             data=csv.encode('utf-8-sig'),
-            file_name=f"skin_texture_data_{today}.csv",
+            file_name=f"skin_texture_summary_{today}.csv",
             mime="text/csv"
         )
 
-        st.markdown(f'<div class="notice">※ CSV 파일을 SPSS 또는 R에 불러와서 통계 분석하세요 · 저장된 데이터: {len(df)}건</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="notice">※ summary 시트 기준 · 피험자 1명당 1행 · SPSS/R에서 바로 사용 가능</div>', unsafe_allow_html=True)
 
         # 데이터 초기화
         st.markdown("---")
-        if st.button("⚠️ 전체 데이터 초기화 (주의)"):
+        if st.button("⚠️ 세션 데이터 초기화"):
             st.session_state['all_data'] = []
             st.rerun()
