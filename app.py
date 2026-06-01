@@ -373,6 +373,61 @@ if 'results' not in st.session_state:
     st.session_state['results'] = []
 if 'current_subject' not in st.session_state:
     st.session_state['current_subject'] = {}
+if 'authenticated' not in st.session_state:
+    st.session_state['authenticated'] = False
+
+
+# ─── 접속 인증 ───────────────────────────────────────
+
+def check_access_password(pw: str) -> bool:
+    correct = st.secrets.get("ACCESS_PASSWORD", "jaeneung2025")
+    return pw == correct
+
+
+if not st.session_state['authenticated']:
+    st.markdown("""
+<div style="max-width:420px;margin:6rem auto;padding:2.5rem;background:#0f1628;
+     border:1px solid #1e3a5f;border-top:3px solid #00d4ff;border-radius:4px;text-align:center">
+  <div style="font-family:'Share Tech Mono',monospace;font-size:11px;
+       color:#5a7a9a;letter-spacing:3px;margin-bottom:1rem">
+    재능대학교 AI-바이오분석특화연구소
+  </div>
+  <div style="font-size:22px;font-weight:700;color:#fff;margin-bottom:0.25rem">
+    🔬 손등 피부 텍스처 분석기
+  </div>
+  <div style="font-family:'Share Tech Mono',monospace;font-size:11px;
+       color:#5a7a9a;margin-bottom:2rem">
+    Research Edition · 승인된 연구 참여자 전용
+  </div>
+  <div style="font-size:13px;color:#c8d8e8;margin-bottom:1.5rem;line-height:1.7">
+    본 프로그램은 연구 목적으로 운영됩니다.<br>
+    참여 코드는 연구 담당자에게 문의하세요.
+  </div>
+</div>
+""", unsafe_allow_html=True)
+
+    col_l, col_c, col_r = st.columns([1,2,1])
+    with col_c:
+        pw_input = st.text_input(
+            "참여 코드 입력",
+            type="password",
+            placeholder="연구 담당자에게 문의",
+            label_visibility="collapsed"
+        )
+        if st.button("▶ 입장", use_container_width=True):
+            if check_access_password(pw_input):
+                st.session_state['authenticated'] = True
+                st.rerun()
+            else:
+                st.error("참여 코드가 올바르지 않습니다. 연구 담당자에게 문의하세요.")
+        st.markdown("""
+<div style="text-align:center;margin-top:1.5rem;font-family:'Share Tech Mono',monospace;
+     font-size:10px;color:#1e3a5f">
+  본 연구는 재능대학교 바이오테크과 오픈랩 행사의 일환으로 진행됩니다<br>
+  © 2025 Jay H. Nam · AI-바이오분석특화연구소
+</div>
+""", unsafe_allow_html=True)
+    st.stop()
 
 
 # ─── 헤더 ───────────────────────────────────────────
