@@ -278,10 +278,72 @@ def save_to_storage(record: dict):
         pass
 
 
-def load_all_data():
-    """Google Sheets에서 전체 데이터 로드"""
+def get_summary_sheet():
+    """summary 시트 연결"""
     try:
-        ws = get_gsheet()
+        if not GSPREAD_AVAILABLE:
+            return None
+        creds_dict = dict(st.secrets["gcp_service_account"])
+        scopes = [
+            "https://www.googleapis.com/auth/spreadsheets",
+            "https://www.googleapis.com/auth/drive"
+        ]
+        creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
+        client = gspread.authorize(creds)
+        sheet_id = st.secrets.get("SHEET_ID", "")
+        if not sheet_id:
+            return None
+        spreadsheet = client.open_by_key(sheet_id)
+        return spreadsheet.worksheet("summary")
+    except Exception as e:
+        return None
+
+
+def save_summary(results: list, subject_info: dict, icc_val):
+    """summary 시트에 피험자 1명당 1행으로 평균값 저장"""
+    try:
+        ws = get_summary_sheet()
+        if not ws:
+            return
+
+        scores = [r.get('texture_score', 0) for r in results]
+        aging = [r.get('aging_grade', 0) for r in results]
+        uniformity = [r.get('texture_uniformity', 0) for r in results]
+
+        avg_score = round(sum(scores) / len(scores), 1)
+        avg_aging = round(sum(aging) / len(aging), 1)
+        avg_uni = round(sum(uniformity) / len(uniformity), 1)
+
+        icc_label, _ = icc_grade(icc_val)
+        last = results[-1]
+
+        # 3회 점수 각각 + 평균 + ICC
+        row = [
+            datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
+            str(subject_info.get('id', '')),
+            str(subject_info.get('age_group', '')),
+            str(subject_info.get('gender', '')),
+            str(scores[0]) if len(scores) > 0 else '',
+            str(scores[1]) if len(scores) > 1 else '',
+            str(scores[2]) if len(scores) > 2 else '',
+            str(avg_score),
+            str(avg_aging),
+            str(avg_uni),
+            str(round(icc_val, 3)) if icc_val is not None else '',
+            str(icc_label),
+            str(last.get('wrinkle_density', '')),
+            str(last.get('skin_condition', '')),
+            str(last.get('opinion', '')[:100]) if last.get('opinion') else '',
+        ]
+        ws.append_row(row)
+    except Exception as e:
+        pass
+
+
+def load_all_data():
+    """Google Sheets summary 시트에서 전체 데이터 로드"""
+    try:
+        ws = get_summary_sheet()
         if ws:
             records = ws.get_all_records()
             return records
@@ -463,6 +525,7 @@ if not research_mode:
                 aging = [r.get('aging_grade', 0) for r in results]
                 icc_val = compute_icc(scores) if len(scores) == 3 else None
 
+                # data 시트: 3회 각각 원본 저장
                 for i, r in enumerate(results):
                     record = {
                         "측정일시": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
@@ -483,6 +546,9 @@ if not research_mode:
                         "ICC": icc_val if i == 2 else None,
                     }
                     save_to_storage(record)
+
+                # summary 시트: 피험자 1명당 1행 (평균값 + ICC)
+                save_summary(results, subject_info, icc_val)
 
                 st.success("✅ 분석 완료")
                 st.rerun()
